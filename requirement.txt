@@ -1,0 +1,25 @@
+python.exe -m pip install --upgrade pip
+
+flask
+requests
+pandas
+pdfplumber
+
+pytesseract 
+pdf2image
+PyMuPDF
+
+uvicorn app:app --reload --port 8080
+
+pip install opencv-python==4.7.0.72
+pip install numpy==1.24.4
+pip install opencv-contrib-python
+
+
+pip install torchvision
+pip install torch
+pip install flask_cors
+pip cache purge
+
+pip install --upgrade pip
+py -3.10 -m venv venv31
