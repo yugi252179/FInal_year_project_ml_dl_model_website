@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="{{ session.get('lang', 'en') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ t.symptom_checker_title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans">
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <h1 class="text-xl font-bold text-blue-600">AI Health Companion</h1>
+                </div>
+                <div class="flex items-center">
+                    <a href="{{ url_for('chat_page') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">{{ t.chatbot_nav }}</a>
+                    <a href="{{ url_for('ehr_page') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">{{ t.my_health_record_link }}</a>
+                    <a href="{{ url_for('logout') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">{{ t.logout_nav }}</a>
+                    <div class="ml-4 border-l pl-4">
+                        <a href="/set_language/en" class="text-sm font-medium {{ 'text-blue-600' if session.get('lang', 'en') == 'en' else 'text-gray-500' }}">English</a>
+                        <span class="mx-1 text-gray-300">|</span>
+                        <a href="/set_language/or" class="text-sm font-medium {{ 'text-blue-600' if session.get('lang', 'en') == 'or' else 'text-gray-500' }}">ଓଡ଼ିଆ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8 mt-8">
+        <div id="symptom-checker-container">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">{{ t.symptom_checker_header }}</h2>
+            <p class="text-center text-gray-600 mb-6">{{ t.symptom_checker_intro }}</p>
+            
+            <div id="start-screen">
+                <label for="initial_symptom" class="block text-gray-700 text-sm font-bold mb-2">{{ t.main_symptom_label }}</label>
+                <input type="text" id="initial_symptom" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <button id="start-btn" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
+                    {{ t.start_assessment_button }}
+                </button>
+            </div>
+
+            <div id="question-screen" class="hidden">
+                <div id="assessment-history" class="mb-4 border-b pb-4 max-h-48 overflow-y-auto"></div>
+                <div id="current-question-area">
+                    <p id="ai-question" class="text-lg font-semibold text-gray-800 mb-4"></p>
+                    <div id="answer-options" class="flex flex-col space-y-2"></div>
+                </div>
+                 <div id="loading-spinner" class="text-center hidden mt-4">
+                    <i class="fas fa-spinner fa-spin text-blue-500 text-3xl"></i>
+                    <p class="text-gray-600">{{ t.ai_thinking }}</p>
+                </div>
+            </div>
+
+            <div id="result-screen" class="hidden text-center">
+                <h3 class="text-xl font-bold text-gray-800 mb-2">{{ t.assessment_complete_header }}</h3>
+                <div id="final-recommendation" class="bg-gray-100 rounded-lg p-4"></div>
+                <button id="restart-btn" class="w-full bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-6">
+                    {{ t.restart_assessment_button }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // This command waits for the entire web page to be fully loaded before running any JavaScript.
+        document.addEventListener('DOMContentLoaded', function() {
+            // This is a dictionary of translated text that our JavaScript can use.
+            const translations = {
+                you: "{{ t.you_history }}",
+                ai: "{{ t.ai_history }}",
+                main_symptom: "{{ t.main_symptom_history }}"
+            };
+
+            // Get references to all the important HTML elements on the page.
+            const startScreen = document.getElementById('start-screen');
+            const questionScreen = document.getElementById('question-screen');
+            const resultScreen = document.getElementById('result-screen');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const currentQuestionArea = document.getElementById('current-question-area');
+            const assessmentHistory = document.getElementById('assessment-history');
+            const aiQuestion = document.getElementById('ai-question');
+            const answerOptions = document.getElementById('answer-options');
+            const finalRecommendation = document.getElementById('final-recommendation');
+            const initialSymptomInput = document.getElementById('initial_symptom');
+            const startBtn = document.getElementById('start-btn');
+            const restartBtn = document.getElementById('restart-btn');
+
+            // This function takes the AI's response and updates the web page.
+            function processResponse(response) {
+                loadingSpinner.classList.add('hidden');
+                currentQuestionArea.classList.remove('hidden');
+
+                if (response.is_final) {
+                    questionScreen.classList.add('hidden');
+                    resultScreen.classList.remove('hidden');
+                    finalRecommendation.innerHTML = response.recommendation;
+                } else {
+                    aiQuestion.textContent = response.next_question;
+                    answerOptions.innerHTML = '';
+                    response.options.forEach(function(optionText) {
+                        const button = document.createElement('button');
+                        button.textContent = optionText;
+                        button.className = "answer-btn bg-gray-200 hover:bg-blue-500 hover:text-white text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow";
+                        answerOptions.appendChild(button);
+                    });
+
+                    if (response.last_question_answered && response.user_answer_to_last_question) {
+                        const historyLog = `
+                            <div class="text-sm mb-2">
+                                <p class="text-gray-500"><strong class="text-gray-600">${translations.ai}:</strong> ${response.last_question_answered}</p>
+                                <p><strong class="text-gray-800">${translations.you}:</strong> ${response.user_answer_to_last_question}</p>
+                            </div>
+                        `;
+                        assessmentHistory.insertAdjacentHTML('beforeend', historyLog);
+                        assessmentHistory.scrollTop = assessmentHistory.scrollHeight;
+                    }
+                }
+            }
+            
+            // This function is called if there is a network error.
+            function handleError() {
+                loadingSpinner.classList.add('hidden');
+                questionScreen.classList.add('hidden');
+                resultScreen.classList.remove('hidden');
+                finalRecommendation.innerHTML = '<p class="text-red-500 font-semibold">Sorry, an error occurred. The AI might be taking too long to respond. Please try again later.</p>';
+            }
+
+            // Event Listener for the "Start Assessment" button.
+            startBtn.addEventListener('click', function() {
+                const initialSymptom = initialSymptomInput.value;
+                if (initialSymptom.trim() === '') return;
+
+                startScreen.classList.add('hidden');
+                questionScreen.classList.remove('hidden');
+                loadingSpinner.classList.remove('hidden');
+                currentQuestionArea.classList.add('hidden');
+                assessmentHistory.innerHTML = `<p class="text-sm text-gray-700 mb-2"><strong>${translations.main_symptom}:</strong> ${initialSymptom}</p>`;
+
+                fetch("{{ url_for('symptom_checker_start') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symptom: initialSymptom })
+                })
+                .then(response => {
+                    if (!response.ok) { throw new Error('Network response was not ok'); }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) { handleError(); } 
+                    else { processResponse(data); }
+                })
+                .catch(error => handleError());
+            });
+
+            // Event Listener for the Answer buttons.
+            document.addEventListener('click', function(event) {
+                if (event.target && event.target.classList.contains('answer-btn')) {
+                    const answer = event.target.textContent;
+
+                    loadingSpinner.classList.remove('hidden');
+                    currentQuestionArea.classList.add('hidden');
+
+                    fetch("{{ url_for('symptom_checker_process') }}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ answer: answer })
+                    })
+                    .then(response => {
+                        if (!response.ok) { throw new Error('Network response was not ok'); }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) { handleError(); }
+                        else { processResponse(data); }
+                    })
+                    .catch(error => handleError());
+                }
+            });
+
+            // Event Listener for the "Start a New Assessment" button.
+            restartBtn.addEventListener('click', function() {
+                resultScreen.classList.add('hidden');
+                startScreen.classList.remove('hidden');
+                initialSymptomInput.value = '';
+                assessmentHistory.innerHTML = '';
+            });
+        });
+    </script>
+</body>
+</html>
+

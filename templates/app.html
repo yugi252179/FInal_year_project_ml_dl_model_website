@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prognosys</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 font-inter transition-colors duration-500 overflow-hidden">
+
+    <div id="app-container" class="min-h-screen flex">
+        <aside id="sidebar" class="w-64 p-4 glass-sidebar shadow-lg fixed inset-y-0 left-0 z-50 transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
+            <div class="flex flex-col h-full space-y-8">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white text-center">Health-Tech</h1>
+                <nav class="flex-1 space-y-2">
+                    <a href="#dashboard" class="sidebar-link group">
+                        <i data-lucide="home"></i><span>Home</span>
+                    </a>
+                    <a href="#heart" class="sidebar-link group">
+                        <i data-lucide="heart"></i><span>Heart Prediction</span>
+                    </a>
+                    <a href="#brain" class="sidebar-link group">
+                        <i data-lucide="brain-circuit"></i><span>Brain Tumor</span>
+                    </a>
+                    <a href="#eye" class="sidebar-link group">
+                        <i data-lucide="eye"></i><span>Eye Glaucoma</span>
+                    </a>
+                </nav>
+                <div class="mt-auto space-y-2">
+                    <button id="logout-button" class="w-full flex items-center space-x-3 p-3 rounded-lg text-red-500 hover:bg-red-500/10 dark:hover:bg-red-500/20 transition-all duration-300">
+                        <i data-lucide="log-out"></i><span>Logout</span>
+                    </button>
+                     <div class="flex items-center space-x-3 p-3 rounded-lg text-gray-900 dark:text-white">
+                        <i data-lucide="user-circle-2"></i><span>trail</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div id="main-content-wrapper" class="flex-1 flex flex-col transition-all duration-300 relative overflow-y-auto">
+             <video id="bg-video" autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000 opacity-0"></video>
+             <div id="bg-video-overlay" class="absolute inset-0 bg-black/50 z-10 transition-opacity duration-1000 opacity-0"></div>
+
+            <header class="md:hidden sticky top-0 z-40 p-4">
+                 <button id="sidebar-toggle-button" class="p-2 rounded-lg glass-card text-gray-600 dark:text-gray-300 shadow-md">
+                    <i data-lucide="menu"></i>
+                </button>
+            </header>
+
+            <main id="app-content" class="flex-1 p-4 sm:p-8 z-20"></main>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>lucide.createIcons();</script>
+    <script src="script.js"></script>
+</body>
+</html>

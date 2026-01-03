@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prognosys | Intelligent Health OS</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="aaa.css" />
+  <script src="dashboard.js" defer></script>
+  <script src="cht.js" defer></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { inter: ['Inter', 'sans-serif'] } } }
+    }
+  </script>
+</head>
+
+<body class="font-inter antialiased overflow-hidden text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+  
+  <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+  <div class="h-screen flex">
+    
+    <aside id="sidebar" class="w-72 p-6 glass-sidebar shadow-2xl fixed inset-y-0 left-0 z-50 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 flex flex-col justify-between">
+      
+      <div>
+        <div class="flex items-center gap-3 mb-10 px-2">
+          <div class="bg-gradient-to-br from-blue-600 to-cyan-500 p-2.5 rounded-xl shadow-lg shadow-blue-500/30"><i data-lucide="activity" class="text-white w-6 h-6"></i></div>
+          <div><h1 class="text-xl font-bold tracking-tight">Prognosys</h1><p class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Health OS v3.1</p></div>
+        </div>
+
+        <nav class="space-y-2">
+          <p class="px-3 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Main</p>
+          <a href="#" class="sidebar-link active"><i data-lucide="layout-dashboard"></i><span>Live Monitor</span></a>
+          <a href="#" id="open-scheduler-btn" class="sidebar-link"><i data-lucide="calendar-clock"></i><span>Scheduler</span></a>
+          <a href="#" id="open-logger-btn" class="sidebar-link"><i data-lucide="plus-circle"></i><span>Log Vitals</span></a>
+          <a href="#" id="open-pres-logger-btn" class="sidebar-link"><i data-lucide="receipt"></i><span>Prescription History</span></a>
+          <a href="#" id="open-recommender-btn" class="sidebar-link"><i data-lucide="hospital"></i><span>Find Hospital</span></a>
+          <a href="#" id="open-meds-btn" class="sidebar-link"><i data-lucide="pill"></i><span>Meds Manager</span></a>
+          <p class="px-3 mt-8 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">AI Diagnostics</p>
+          <a href="heart_prediction.html" class="sidebar-link"><i data-lucide="heart-pulse"></i><span>Heart Health</span></a>
+          <a href="brain_tumor.html" class="sidebar-link"><i data-lucide="brain-circuit"></i><span>Brain Tumor</span></a>
+          <a href="eye_glaucoma.html" class="sidebar-link"><i data-lucide="eye"></i><span>Eye Glaucoma</span></a>
+        </nav>
+      </div>
+      
+      <div class="space-y-2 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <button id="open-settings-btn" class="sidebar-link w-full hover:bg-slate-200 dark:hover:bg-slate-800"><i data-lucide="settings-2"></i><span>System Settings</span></button>
+        
+        <button onclick="logout()" class="sidebar-link w-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10">
+            <i data-lucide="log-out"></i><span>Sign Out</span>
+        </button>
+        
+        <div id="open-profile-btn" class="flex items-center gap-3 p-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 mt-4 cursor-pointer hover:scale-[1.02] transition-transform">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold"><span id="user-initials">JD</span></div>
+          <div class="flex-1 min-w-0"><p id="sidebar-username" class="text-sm font-bold truncate">John Doe</p><p class="text-xs text-blue-500 truncate">Health Profile</p></div>
+        </div>
+
+        <div id="watch-status-card" class="mt-4 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 flex items-center gap-3 hidden">
+          <div class="p-2 bg-green-500 rounded-full text-white"><i data-lucide="watch" class="w-4 h-4"></i></div>
+          <div><p class="text-xs font-bold text-green-700 dark:text-green-400 uppercase">Connected</p><p id="watch-name-display" class="text-xs font-bold truncate">Device</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col relative h-full overflow-hidden">
+      
+      <header class="flex items-center justify-between p-4 md:px-8 pt-6 z-40">
+        <button id="sidebar-toggle" class="md:hidden p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800"><i data-lucide="menu"></i></button>
+        <div class="hidden sm:flex items-center gap-3 p-2 bg-slate-100 dark:bg-slate-800/50 rounded-full border border-slate-300/50 dark:border-slate-700">
+            <label class="switch ml-1">
+                <input type="checkbox" checked id="location-toggle">
+                <span class="slider round"></span>
+            </label>
+            <div class="flex items-center gap-2 pr-2 text-sm font-bold text-blue-600 dark:text-blue-400">
+                <i data-lucide="map-pin" class="w-4 h-4"></i>
+                <span id="header-locality">Chennai</span>
+            </div>
+        </div>
+        <div class="ml-auto flex items-center gap-4">
+          <button id="sos-btn" class="hidden sm:flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-600 border border-red-500/20 rounded-full text-xs font-bold hover:bg-red-500 hover:text-white transition-all"><i data-lucide="siren" class="w-4 h-4"></i> SOS</button>
+          
+          <div class="text-right hidden md:block"><p id="current-date" class="text-xs text-gray-500">Date</p><p id="current-time" class="text-sm font-bold">00:00:00</p></div>
+          
+          <div class="relative">
+            <button id="notif-btn" class="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+              <div id="notif-dot" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-ping hidden"></div>
+              <div id="notif-dot-static" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full hidden"></div>
+              <i data-lucide="bell" class="w-5 h-5 text-gray-600 dark:text-gray-300"></i>
+            </button>
+            <div id="notif-dropdown" class="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 hidden z-50 overflow-hidden">
+               <div class="p-3 border-b dark:border-gray-700 font-bold text-sm flex justify-between bg-gray-50 dark:bg-slate-700/50">
+                   <span>Notifications</span>
+                   <span class="text-xs text-blue-500 cursor-pointer hover:underline" onclick="clearNotifs()">Clear All</span>
+               </div>
+               <div id="notif-list" class="max-h-64 overflow-y-auto">
+                   <div class="p-4 text-center text-gray-400 text-xs">No new alerts.</div>
+               </div>
+            </div>
+          </div>
+
+          <button id="connect-watch-btn" class="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full text-xs font-bold hover:shadow-lg hover:scale-105 transition-all">
+              <i data-lucide="bluetooth"></i> <span>Connect Device</span>
+          </button>
+        </div>
+      </header>
+      
+
+      <main class="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth">
+        <div class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
+          
+          <div class="flex flex-col md:flex-row justify-between items-end gap-4">
+            <div>
+              <h2 id="welcome-msg" class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">Welcome back.</h2>
+              <p class="text-gray-500 dark:text-gray-400">Real-time vital monitoring active.</p>
+            </div>
+            <div class="px-4 py-1.5 bg-green-500/10 text-green-600 rounded-full text-xs font-bold border border-green-500/20 flex items-center gap-2"><i data-lucide="flame" class="w-4 h-4"></i> 0 Day Streak</div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="glass-card p-6 rounded-2xl group">
+              <div class="flex justify-between mb-2"><div class="p-2 bg-red-500/10 rounded-lg text-red-500"><i data-lucide="heart"></i></div><span class="text-xs font-bold text-gray-400">ECG</span></div>
+              <div class="flex items-end gap-3 mb-4"><h3 class="text-4xl font-bold" id="display-hr">--</h3><p class="text-sm text-gray-400">bpm</p></div>
+              <div class="h-16 w-full"><canvas id="heartRateChart"></canvas></div>
+            </div>
+            <div class="glass-card p-6 rounded-2xl flex flex-col">
+              <div class="flex justify-between mb-2"><div class="p-2 bg-blue-500/10 rounded-lg text-blue-500"><i data-lucide="activity"></i></div><span class="text-xs font-bold text-gray-400">BP</span></div>
+              <div class="flex items-end gap-3 mb-2"><h3 class="text-4xl font-bold" id="display-bp">-/-</h3><p class="text-sm text-gray-400">mmHg</p></div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-4"><div id="bp-bar" class="bg-blue-500 h-1.5 rounded-full" style="width: 50%"></div></div>
+            </div>
+            <div class="glass-card p-6 rounded-2xl flex flex-col">
+              <div class="flex justify-between mb-2"><div class="p-2 bg-orange-500/10 rounded-lg text-orange-500"><i data-lucide="footprints"></i></div><span class="text-xs font-bold text-gray-400">STEPS</span></div>
+              <div class="flex items-end gap-3 mb-4"><h3 class="text-4xl font-bold" id="display-steps">0</h3><p class="text-sm text-gray-400">steps</p></div>
+              <div class="flex items-center gap-2 text-xs text-orange-500"><i data-lucide="flame" class="w-3 h-3"></i> <span id="display-cal">0</span> kcal</div>
+            </div>
+          </div>
+
+          <div id="predictive-widget" class="glass-card p-6 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white">
+            <h3 id="predictive-title" class="text-lg font-bold mb-2 flex items-center gap-2"><i data-lucide="sun"></i> Predicted Activity Window</h3>
+            <p id="predictive-recommendation" class="text-blue-100 text-sm leading-relaxed">Analyzing latest vitals to predict optimal energy state...</p>
+            <div id="predictive-metrics" class="mt-3 text-xs text-blue-200 space-y-1">
+              </div>
+          </div>
+          
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 rounded-2xl overflow-hidden shadow-xl relative h-64 lg:h-80 group">
+              <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover" src="Prognosys.mp4" onerror="this.parentElement.style.backgroundColor='#1e293b'"></video>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+              <div class="absolute bottom-0 left-0 p-6">
+                <h3 class="text-2xl font-bold text-white">AI Diagnostics Engine</h3>
+                <p class="text-gray-300 text-sm mt-1 max-w-md">Running deep learning analysis on uploaded imagery.</p>
+              </div>
+            </div>
+            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-2 mb-3 text-amber-500 font-bold text-xs uppercase tracking-widest"><i data-lucide="lightbulb" class="w-4 h-4"></i> Daily Insight</div>
+                    <h3 id="daily-tip-title" class="text-xl font-bold mb-2">Sleep Hygiene</h3>
+                    <p id="daily-tip-body" class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">Consistency is key. Going to bed at the same time every night helps regulate your circadian rhythm.</p>
+                </div>
+            </div>
+          </div>
+
+          <div class="glass-card p-6 rounded-2xl">
+            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">Active Reminders</h3><button id="add-reminder-widget-btn" class="text-blue-500 text-sm font-medium hover:underline">+ Add New</button></div>
+            <div id="reminder-list" class="space-y-2"><div class="text-center py-6 text-gray-400 text-sm">No active reminders.</div></div>
+          </div>
+        </div>
+        <div class="h-20"></div>
+      </main>
+    </div>
+  </div>
+  <div id="recommender-modal" class="fixed inset-0 z-[80] items-center justify-center bg-black/60 backdrop-blur-sm hidden" style="display: none;">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col mx-4 shadow-2xl animate-fade-in-up overflow-hidden">
+        <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+            <h3 class="text-xl font-bold flex items-center gap-2"><i data-lucide="hospital"></i> Find Specialized Care</h3>
+            <button id="close-recommender-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1">
+            
+            <div class="mb-6 space-y-3">
+                <p class="label-text">Search by Speciality (e.g., Cardiology, Orthopaedics)</p>
+                <input type="text" id="hospital-search-input" placeholder="Enter speciality or condition..." class="input-std text-base" />
+                <div id="search-status" class="text-sm text-gray-500">Search "Cardiology" to see recommendations.</div>
+            </div>
+
+            <h4 class="font-bold text-lg mb-4 flex items-center gap-2"><i data-lucide="search"></i> Top Recommendations (<span id="result-count">0</span>)</h4>
+            
+            <div id="hospital-results-list" class="space-y-4">
+                <div class="text-center py-6 text-gray-400 text-sm">Start typing a speciality above to find hospitals.</div>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <div id="chat-launcher" class="fixed bottom-6 right-6 z-[60] cursor-pointer animate-bounce-slow group">
+    <div class="bg-blue-600 text-white rounded-full p-4 shadow-xl hover:scale-110 transition-transform flex items-center gap-2">
+      <i data-lucide="bot" class="w-6 h-6"></i><span class="hidden md:block font-bold">AI Help</span>
+    </div>
+  </div>
+
+  <div id="chat-modal" class="fixed inset-0 z-[70] items-center justify-center bg-black/60 backdrop-blur-sm hidden" style="display: none;">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md h-[70vh] flex flex-col mx-4 overflow-hidden animate-fade-in-up">
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+        <span class="font-bold">Health Bot</span><button id="close-chat-btn"><i data-lucide="x"></i></button>
+      </div>
+      <div id="chatbox" class="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50 dark:bg-slate-900/50"></div>
+      <form id="message-form" class="p-3 border-t dark:border-gray-700 bg-white dark:bg-slate-800 flex gap-2">
+        <input type="text" id="message-input" placeholder="Type here..." class="flex-1 bg-gray-100 dark:bg-slate-700 rounded-full px-4 py-2 text-sm outline-none" />
+        <button type="submit" class="bg-blue-600 text-white p-2 rounded-full"><i data-lucide="send" class="w-4 h-4"></i></button>
+      </form>
+    </div>
+  </div>
+
+  <div id="settings-modal" class="fixed inset-0 z-[90] items-center justify-center bg-black/70 backdrop-blur-sm hidden" style="display: none;">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-4xl h-[85vh] mx-4 flex overflow-hidden shadow-2xl animate-fade-in-up">
+      <div class="w-1/3 bg-gray-50 dark:bg-slate-800/50 p-6 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+        <h2 class="text-xl font-bold mb-6">Settings</h2>
+        <nav class="space-y-1">
+          <button class="settings-tab active sidebar-link w-full" data-tab="tab-general">General</button>
+          <button class="settings-tab sidebar-link w-full" data-tab="tab-appearance">Appearance</button>
+          <button class="settings-tab sidebar-link w-full" data-tab="tab-privacy">Privacy</button>
+          <button class="settings-tab sidebar-link w-full" data-tab="tab-dev">Advanced</button>
+        </nav>
+        <button id="close-settings-btn" class="mt-auto sidebar-link w-full">Back</button>
+      </div>
+      <div class="flex-1 p-8 overflow-y-auto" id="settings-content">
+        <div id="tab-general" class="settings-content">
+           <h3 class="font-bold mb-4 text-lg">General Preferences</h3>
+           <div class="flex justify-between items-center p-4 border-b dark:border-gray-700"><div><p class="font-medium">Sound Effects</p></div><label class="switch"><input type="checkbox" checked id="set-sound"><span class="slider round"></span></label></div>
+        </div>
+        <div id="tab-appearance" class="settings-content hidden">
+           <h3 class="font-bold mb-4 text-lg">Appearance</h3>
+           <div class="flex justify-between items-center p-4 border-b dark:border-gray-700"><div><p class="font-medium">Dark Mode</p></div><label class="switch"><input type="checkbox" id="set-darkmode"><span class="slider round"></span></label></div>
+           <div class="flex justify-between items-center p-4 border-b dark:border-gray-700"><div><p class="font-medium">High Contrast</p></div><label class="switch"><input type="checkbox" id="set-contrast"><span class="slider round"></span></label></div>
+        </div>
+        <div id="tab-privacy" class="settings-content hidden">
+           <h3 class="font-bold mb-4 text-lg">Data Privacy</h3>
+           <button id="export-data-btn" class="btn-primary w-full mb-4">Export Health Data (CSV)</button>
+           <button id="clear-data-btn" class="w-full p-3 border border-red-500 text-red-500 rounded-xl hover:bg-red-50">Clear All Local Data</button>
+        </div>
+        <div id="tab-dev" class="settings-content hidden">
+           <h3 class="font-bold mb-4 text-lg">Developer Console</h3>
+           <div class="bg-black text-green-400 font-mono text-xs p-4 rounded h-48 overflow-auto mb-4" id="debug-console"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="meds-modal" class="fixed inset-0 z-[80] items-center justify-center bg-black/60 backdrop-blur-sm hidden" style="display: none;">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col mx-4 shadow-2xl animate-fade-in-up overflow-hidden">
+        <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+            <h3 class="text-xl font-bold flex items-center gap-2"><i data-lucide="pill"></i> Medication Inventory</h3>
+            <button id="close-meds-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1 space-y-6">
+            
+            <div id="interaction-alerts" class="p-4 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-xl hidden">
+                <p class="font-bold text-lg text-yellow-700 dark:text-yellow-300 flex items-center gap-2"><i data-lucide="alert-triangle"></i> Interaction Alerts</p>
+                <ul id="interaction-list" class="mt-2 list-disc list-inside text-sm text-yellow-800 dark:text-yellow-200">
+                    </ul>
+            </div>
+
+            <h4 class="font-bold text-lg">Active Medications (from History)</h4>
+            <div id="medication-inventory-list" class="space-y-3">
+                <div class="text-center py-4 text-gray-400 text-sm">No medications synced from Prescription History.</div>
+            </div>
+            
+            <h4 class="font-bold text-lg pt-4 border-t dark:border-gray-700">Add Custom Drug</h4>
+            <form id="manual-drug-form" class="flex gap-2">
+                <input type="text" id="manual-drug-name" placeholder="Drug Name (e.g., Warfarin)" class="input-std flex-1" required />
+                <button type="submit" class="btn-primary flex-shrink-0">Add</button>
+            </form>
+        </div>
+    </div>
+  </div>
+
+  <div id="scan-modal" class="fixed inset-0 z-[100] items-center justify-center bg-black/80 backdrop-blur-md hidden" style="display: none;">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-8 mx-4 shadow-2xl animate-fade-in-up text-center relative">
+      <button id="close-scan-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i data-lucide="x"></i></button>
+      <div id="scan-animation" class="mb-6 h-32 flex items-center justify-center relative">
+        <div class="absolute w-24 h-24 bg-blue-500/20 rounded-full animate-ping"></div>
+        <i data-lucide="bluetooth" class="w-8 h-8 relative z-10 text-blue-600"></i>
+      </div>
+      <h3 id="scan-title" class="text-xl font-bold">Scanning...</h3>
+      <div id="device-list" class="hidden mt-4 space-y-2 text-left">
+        <div onclick="pairDevice('Apple Watch Ultra')" class="p-3 bg-gray-100 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-blue-100 flex justify-between items-center"><div class="flex gap-2"><i data-lucide="watch" class="w-4 h-4"></i> <span>Apple Watch</span></div><span class="text-green-500 font-bold text-xs">Connect</span></div>
+        <div onclick="pairDevice('Prognosys Band')" class="p-3 bg-gray-100 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-blue-100 flex justify-between items-center"><div class="flex gap-2"><i data-lucide="activity" class="w-4 h-4"></i> <span>Prognosys Band</span></div><span class="text-green-500 font-bold text-xs">Connect</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="logger-modal" class="fixed inset-0 z-[80] items-center justify-center bg-black/60 backdrop-blur-sm hidden" style="display: none;">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-6 mx-4 shadow-2xl animate-fade-in-up">
+          <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-bold">Manual Entry</h3>
+              <button id="close-logger-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <form id="vitals-form" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                  <div><label class="label-text">Systolic</label><input type="number" id="input-sys" placeholder="120" class="input-std"></div>
+                  <div><label class="label-text">Diastolic</label><input type="number" id="input-dia" placeholder="80" class="input-std"></div>
+              </div>
+              <div><label class="label-text">Heart Rate</label><input type="number" id="input-hr" placeholder="72" class="input-std"></div>
+              <button type="submit" class="btn-primary w-full">Update Dashboard</button>
+          </form>
+      </div>
+  </div>
+
+  <div id="reminder-modal" class="fixed inset-0 z-[80] items-center justify-center bg-black/60 backdrop-blur-sm hidden" style="display: none;">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6 mx-4 shadow-2xl animate-fade-in-up">
+        <h3 class="text-lg font-bold mb-4">Set Reminder</h3>
+        <form id="reminder-form" class="space-y-4">
+            <input type="text" id="rem-name" placeholder="Task Name" class="input-std" required>
+            <input type="time" id="rem-time" class="input-std" required>
+            <div class="flex justify-end gap-2"><button type="button" id="close-rem-btn" class="text-sm text-gray-500">Cancel</button><button type="submit" class="btn-primary">Set</button></div>
+        </form>
+    </div>
+  </div>
+
+  <div id="profile-modal" class="fixed inset-0 z-[90] items-center justify-center bg-black/60 backdrop-blur-sm hidden" style="display: none;">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col animate-fade-in-up overflow-hidden">
+      <div class="p-6 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+        <h2 class="text-xl font-bold">Personal Health Details</h2>
+        <button id="close-profile-btn"><i data-lucide="x"></i></button>
+      </div>
+      <div class="p-6 overflow-y-auto">
+        <form id="health-profile-form" class="space-y-6">
+          <div><label class="label-text">Full Name</label><input type="text" id="prof-name" class="input-std" placeholder="John Doe" /></div>
+          
+          <div class="grid grid-cols-2 gap-4">
+             <div><label class="label-text">Age</label><input type="number" id="prof-age" class="input-std" placeholder="25" /></div>
+             <div><label class="label-text">Gender</label><select id="prof-gender" class="input-std"><option>Male</option><option>Female</option><option>Other</option></select></div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+             <div><label class="label-text">Blood Group</label><select id="prof-blood" class="input-std"><option>A+</option><option>O+</option><option>B+</option><option>AB+</option></select></div>
+             <div><label class="label-text">Height (cm)</label><input type="number" id="prof-height" class="input-std" placeholder="175" /></div>
+             <div><label class="label-text">Weight (kg)</label><input type="number" id="prof-weight" class="input-std" placeholder="70" /></div>
+          </div>
+
+          <div><label class="label-text">Emergency Contact (Phone)</label><input type="tel" id="prof-emergency" class="input-std" placeholder="+1 234 567 890" /></div>
+
+          <div><label class="label-text">Medical Conditions</label><textarea id="prof-conditions" class="input-std" rows="2" placeholder="e.g. Asthma, Diabetes"></textarea></div>
+
+          <button type="submit" class="btn-primary w-full">Save Profile</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div id="prescription-modal" class="fixed inset-0 z-[80] items-center justify-center bg-black/60 backdrop-blur-sm hidden" style="display: none;">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col mx-4 shadow-2xl animate-fade-in-up overflow-hidden">
+        <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+            <h3 class="text-xl font-bold flex items-center gap-2"><i data-lucide="receipt"></i> Prescription History</h3>
+            <button id="close-pres-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1">
+            
+            <div id="upload-area" class="p-6 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-xl mb-6 text-center cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+                <i data-lucide="cloud-upload" class="w-8 h-8 mx-auto text-blue-500 mb-2"></i>
+                <p class="font-semibold text-sm">Upload New Prescription Image (Photo)</p>
+                <p class="text-xs text-gray-500">Tap to select or drag & drop files here.</p>
+                <input type="file" id="pres-file-input" accept="image/*" class="hidden">
+            </div>
+
+            <div id="pres-details-container" class="space-y-4 hidden">
+                <h4 class="font-bold text-lg mb-4">Latest Scan Preview & Details</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-100 dark:bg-slate-700 rounded-lg p-2 flex items-center justify-center">
+                        <img id="pres-image-preview" class="max-h-64 rounded-md object-contain" alt="Prescription Image Preview">
+                    </div>
+                    <div id="extracted-info" class="p-4 glass-card-lite space-y-3">
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Extracted Summary (Simulated)</p>
+                        <p><strong>Doctor:</strong> <span id="sim-doctor"></span></p>
+                        <p><strong>Diagnosis:</strong> <span id="sim-reason"></span></p>
+                        <p><strong>Medication:</strong> <span id="sim-med"></span></p>
+                        <p><strong>Date:</strong> <span id="sim-date"></span></p>
+                        <button id="download-btn" class="btn-primary w-full text-xs mt-3"><i data-lucide="download" class="w-3 h-3 inline mr-1"></i> Download PDF Summary</button>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="font-bold text-lg mt-8 mb-4">Full History Log</h4>
+            <div id="prescription-history-list" class="space-y-3">
+                <div class="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg text-sm flex justify-between items-center">
+                    <span>No prescriptions logged yet.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+  <div id="scheduler-modal" class="fixed inset-0 z-[80] items-center justify-center bg-black/60 backdrop-blur-sm hidden" style="display: none;">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col mx-4 shadow-2xl animate-fade-in-up overflow-hidden">
+        <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+            <h3 class="text-xl font-bold flex items-center gap-2"><i data-lucide="calendar-clock"></i> Health Scheduler</h3>
+            <button id="close-scheduler-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 flex-1 overflow-y-auto">
+            
+            <div id="schedule-predictive-panel" class="md:col-span-1 p-6 space-y-4 bg-slate-50 dark:bg-slate-700/50 border-r dark:border-gray-700">
+                <h4 class="font-bold text-base text-teal-600 dark:text-teal-400 flex items-center gap-2"><i data-lucide="zap"></i> Wellness Prediction</h4>
+                <div id="schedule-prediction-summary">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Loading live data...</p>
+                </div>
+                <button id="set-peak-reminder-btn" class="btn-primary w-full mt-3 text-xs flex items-center justify-center gap-2 hidden">
+                    <i data-lucide="bell" class="w-4 h-4"></i> Schedule Peak Activity
+                </button>
+            </div>
+
+            <div class="md:col-span-2 p-6 space-y-6">
+                <div class="flex justify-between items-center">
+                    <h4 class="font-bold text-lg">Active Reminders</h4>
+                    <button id="add-reminder-scheduler-btn" class="text-blue-500 text-sm font-medium hover:underline">+ Add New Reminder</button>
+                </div>
+                
+                <div id="schedule-reminder-list" class="space-y-3">
+                    <div class="text-center py-6 text-gray-400 text-sm">No active reminders.</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+  </div>
+</body>
+</html>
